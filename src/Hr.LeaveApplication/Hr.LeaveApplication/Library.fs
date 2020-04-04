@@ -1,84 +1,57 @@
 ﻿namespace Hr.LeaveApplication
 
 // Employees are able to file
-
 // Managers can approve
 // Managers can reject
 // Admin can create employees and managers 
 // Managers can register themselves as an employee's manager
 // Employees can cancel their leaves
 
-type Reason = string
+type todo = unit
+module todo = 
+    let func () = ()
 
-type ReasonForRejection = Reason
 
-type Employee =
-    {
-        EmployeeNumber: string;
-    }
+type FiledLeaveApplication = todo
+type ApprovedLeaveApplication = todo
+type RejectedLeaveApplication = todo
+type RevisedLeaveApplication = todo
+type CancelledLeaveApplication = todo
 
-type Manager = Employee
+type UserAction = 
+    | Approve
+    | Reject
+    | Cancel
 
-type DatesAppliedFor = 
-    {
-        Start: System.DateTime;
-        End: System.DateTime;
-    }
+type Role = 
+    | Manager of todo
+    | Employee of todo
 
-module LeaveApplicationModule =
+module LeaveApplication =
+    type State = 
+        | FiledState of FiledLeaveApplication
+        | ApprovedState of ApprovedLeaveApplication
+        | RejectedState of RejectedLeaveApplication
+        | RevisedState of RevisedLeaveApplication
+        | CancelledState of CancelledLeaveApplication
 
-    type FiledLeaveApplication = 
-        {
-            Employee: Employee;
-            DatesAppliedFor: DatesAppliedFor;
-            Reason: Reason;
-        }
-
-    type ApprovedLeaveApplication =
-        FiledLeaveApplication * Manager
-        
-    type RejectedLeaveApplication =
-        FiledLeaveApplication * Manager * ReasonForRejection
+    let transformFromFiledState getAction approve reject cancel (leaveApplication : FiledLeaveApplication) : State =
+        match getAction () with
+            | Approve -> approve leaveApplication |> ApprovedState
+            | Reject -> reject leaveApplication |> RejectedState
+            | Cancel -> cancel leaveApplication |> CancelledState
     
-    type RevisedLeaveApplication =
-        RejectedLeaveApplication
+    let transformFromApprovedState cancel (leaveApplication : ApprovedLeaveApplication) : State = 
+        cancel leaveApplication |> CancelledState
         
-    type LeaveApplication =
-        | FiledLeaveApplication of FiledLeaveApplication
-        | ApprovedLeaveApplication of ApprovedLeaveApplication
-        | RejectedLeaveApplication of RejectedLeaveApplication
-        | RevisedLeaveApplication of RevisedLeaveApplication
+    let transformFromRejectedState file (leaveApplication : RejectedLeaveApplication) : State = 
+        file leaveApplication |> RevisedState
 
-    let fileLeave (employee: Employee) (datesAppliedFor: DatesAppliedFor) (reason: Reason) : FiledLeaveApplication =
-        {
-            Employee = employee;
-            DatesAppliedFor = datesAppliedFor;
-            Reason = reason;
-        }
-
-    let approveLeaveApplication (manager: Manager) (leaveApplication: LeaveApplication) : ApprovedLeaveApplication =
-        match leaveApplication with
-            | FiledLeaveApplication filed -> filed, manager
-            | RevisedLeaveApplication revised -> revised, manager
-            | ApprovedLeaveApplication approved -> Error
-            | RejectedLeaveApplication rejected -> Error
-            | _ -> Error
+    let transformFromRevisedState getAction approve reject cancel (leaveApplication : RevisedLeaveApplication) : State = 
+        match getAction () with
+            | Approve -> approve leaveApplication |> ApprovedState
+            | Reject -> reject leaveApplication |> RejectedState
+            | Cancel -> cancel leaveApplication |> CancelledState
         
-    let rejectLeaveApplication (manager: Manager) (leaveApplication: FiledLeaveApplication) (reason: ReasonForRejection) : RejectedLeaveApplication =
-        leaveApplication, manager, reason
-
-
-    // Test
-    let employee = { EmployeeNumber = "001" }
-    let date = 
-        { 
-            Start = new System.DateTime(2000,1,1);
-            End = new System.DateTime(2000,1,2);
-        }
-    let reason = "annual leave" : Reason
-    let leave = fileLeave employee date reason
-
-    let manager = { EmployeeNumber = "guy" } : Manager
-    let rejectedLeave = rejectLeaveApplication manager leave "not a good reason"
-
-    let refiledLeave = reviseLeave rejectedLeave rejectedLeave
+    let transformFromCancelledStatecancel : State = 
+           todo.func() |> CancelledState
